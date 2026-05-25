@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Тест миллиардера</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  min-height:100vh;
+  padding:0;
+  overflow-x:hidden;
+  background:#000;
+}
+
+.bg{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  background:radial-gradient(ellipse 80% 60% at 20% 20%,rgba(120,80,255,0.35) 0%,transparent 60%),
+             radial-gradient(ellipse 60% 80% at 80% 80%,rgba(0,180,255,0.25) 0%,transparent 60%),
+             radial-gradient(ellipse 50% 50% at 50% 50%,rgba(255,120,80,0.12) 0%,transparent 70%),
+             #050508;
+  z-index:0;
+}
+
+.wrap{position:relative;z-index:1;padding:28px 18px 60px;max-width:480px;margin:0 auto;}
+
+.screen{display:none;}
+.screen.active{display:block;}
+
+/* GLASS MIXIN */
+.glass{
+  background:rgba(255,255,255,0.07);
+  backdrop-filter:blur(24px) saturate(180%);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+  border:1px solid rgba(255,255,255,0.13);
+  border-radius:24px;
+}
+.glass-dark{
+  background:rgba(0,0,0,0.35);
+  backdrop-filter:blur(32px) saturate(200%);
+  -webkit-backdrop-filter:blur(32px) saturate(200%);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:24px;
+}
+
+/* HOME */
+.home-glow{
+  width:120px;height:120px;border-radius:50%;
+  background:radial-gradient(circle,rgba(160,100,255,0.5),rgba(0,160,255,0.3),transparent 70%);
+  margin:0 auto 4px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:52px;
+  filter:drop-shadow(0 0 32px rgba(140,80,255,0.6));
+}
+.home-eyebrow{
+  text-align:center;font-size:10px;letter-spacing:4px;
+  text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:12px;
+}
+.home-title{
+  font-size:38px;font-weight:700;text-align:center;
+  line-height:1.1;color:#fff;margin-bottom:10px;
+  letter-spacing:-1px;
+}
+.home-title .gold{
+  background:linear-gradient(135deg,#c8a04a,#f5d875,#c8a04a);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.home-sub{
+  text-align:center;font-size:14px;color:rgba(255,255,255,0.35);
+  line-height:1.65;margin-bottom:28px;font-weight:300;
+}
+.stat-row{display:flex;justify-content:center;gap:0;margin-bottom:28px;}
+.stat-item{
+  flex:1;text-align:center;padding:16px 8px;
+}
+.stat-item:not(:last-child){border-right:1px solid rgba(255,255,255,0.08);}
+.stat-num{
+  font-size:22px;font-weight:600;color:#fff;
+  background:linear-gradient(135deg,#c8a04a,#f5d875);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.stat-label{font-size:10px;color:rgba(255,255,255,0.25);letter-spacing:1px;text-transform:uppercase;margin-top:3px;}
+
+.start-btn{
+  display:block;width:100%;padding:18px;
+  font-size:15px;font-weight:600;letter-spacing:0.5px;
+  background:linear-gradient(135deg,rgba(200,160,74,0.9),rgba(245,216,117,0.95),rgba(200,160,74,0.9));
+  color:#1a1200;border:none;border-radius:16px;cursor:pointer;
+  box-shadow:0 8px 32px rgba(200,160,74,0.25),0 2px 8px rgba(0,0,0,0.4);
+  transition:transform .15s,box-shadow .15s;
+}
+.start-btn:active{transform:scale(0.98);box-shadow:0 4px 16px rgba(200,160,74,0.2);}
+.disclaimer{text-align:center;font-size:11px;color:rgba(255,255,255,0.15);margin-top:14px;}
+
+/* QUIZ */
+.q-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.q-counter{
+  font-size:12px;font-weight:500;
+  color:rgba(255,255,255,0.4);letter-spacing:1px;
+}
+.q-exit{
+  font-size:13px;color:rgba(255,255,255,0.2);cursor:pointer;
+  padding:6px 10px;border-radius:8px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.07);
+}
+
+.progress-track{
+  height:3px;border-radius:2px;
+  background:rgba(255,255,255,0.06);
+  margin-bottom:28px;overflow:hidden;
+}
+.progress-fill{
+  height:100%;border-radius:2px;
+  background:linear-gradient(90deg,#8040ff,#c8a04a,#f5d875);
+  transition:width .45s cubic-bezier(.4,0,.2,1);
+}
+
+.q-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:20px;
+  background:rgba(200,160,74,0.1);
+  border:1px solid rgba(200,160,74,0.2);
+  font-size:10px;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(200,160,74,0.8);margin-bottom:8px;
+}
+.q-hero-name{
+  font-size:12px;color:rgba(255,255,255,0.3);
+  font-weight:300;margin-bottom:12px;font-style:italic;
+}
+.q-context{
+  font-size:14px;color:rgba(255,255,255,0.45);
+  line-height:1.7;font-weight:300;
+  padding:16px 18px;margin-bottom:20px;
+  background:rgba(255,255,255,0.04);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:16px;
+  border-left:2px solid rgba(200,160,74,0.3);
+}
+.q-text{
+  font-size:20px;font-weight:600;color:#fff;
+  line-height:1.35;margin-bottom:20px;letter-spacing:-0.3px;
+}
+
+.options{display:flex;flex-direction:column;gap:10px;}
+.opt{
+  padding:15px 18px;
+  background:rgba(255,255,255,0.05);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,0.09);
+  border-radius:16px;
+  font-size:14px;color:rgba(255,255,255,0.6);
+  cursor:pointer;text-align:left;
+  transition:all .2s cubic-bezier(.4,0,.2,1);
+  line-height:1.5;
+  display:flex;align-items:flex-start;gap:12px;
+}
+.opt:active{background:rgba(255,255,255,0.09);transform:scale(0.99);}
+.opt.selected{
+  background:rgba(200,160,74,0.12);
+  border-color:rgba(200,160,74,0.4);
+  color:#fff;
+  box-shadow:0 0 24px rgba(200,160,74,0.1);
+}
+.opt-letter{
+  min-width:22px;height:22px;border-radius:6px;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.1);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:600;color:rgba(255,255,255,0.25);
+  flex-shrink:0;margin-top:1px;
+  transition:all .2s;
+}
+.opt.selected .opt-letter{
+  background:rgba(200,160,74,0.2);
+  border-color:rgba(200,160,74,0.5);
+  color:#c8a04a;
+}
+
+/* RESULT */
+.res-top{text-align:center;padding:1rem 0 1.5rem;}
+.res-eyebrow{
+  display:inline-block;font-size:10px;letter-spacing:4px;
+  text-transform:uppercase;color:rgba(255,255,255,0.25);
+  margin-bottom:16px;
+}
+.res-icon{
+  font-size:64px;display:block;margin-bottom:14px;
+  filter:drop-shadow(0 0 24px rgba(200,160,74,0.4));
+}
+.res-title{
+  font-size:28px;font-weight:700;color:#fff;
+  margin-bottom:6px;letter-spacing:-0.5px;line-height:1.2;
+}
+.res-sub{
+  font-size:12px;color:rgba(255,255,255,0.25);
+  letter-spacing:2px;text-transform:uppercase;margin-bottom:24px;
+}
+
+.score-glass{
+  padding:24px;margin:0 0 20px;text-align:center;
+  background:rgba(255,255,255,0.05);
+  backdrop-filter:blur(32px);
+  -webkit-backdrop-filter:blur(32px);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:24px;
+}
+.score-num{
+  font-size:64px;font-weight:700;line-height:1;
+  background:linear-gradient(135deg,#c8a04a,#f5d875,#c8a04a);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.score-label{
+  font-size:11px;color:rgba(255,255,255,0.2);
+  letter-spacing:3px;text-transform:uppercase;margin-top:6px;
+}
+.meter-track{
+  height:2px;background:rgba(255,255,255,0.06);
+  border-radius:2px;margin:18px 0 0;overflow:hidden;
+}
+.meter-fill{
+  height:100%;border-radius:2px;
+  background:linear-gradient(90deg,rgba(128,64,255,0.8),#c8a04a,#f5d875);
+  transition:width 1.6s cubic-bezier(.17,.67,.42,1);
+}
+
+.res-desc-block{
+  padding:20px;margin-bottom:20px;
+  background:rgba(255,255,255,0.04);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:20px;
+}
+.res-verdict{
+  font-size:16px;font-weight:600;
+  background:linear-gradient(135deg,#c8a04a,#f5d875);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:8px;line-height:1.4;
+}
+.res-desc-text{
+  font-size:14px;color:rgba(255,255,255,0.45);
+  line-height:1.7;font-weight:300;
+}
+
+.traits{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;}
+.trait{
+  padding:6px 14px;font-size:11px;letter-spacing:0.5px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:20px;color:rgba(255,255,255,0.35);
+}
+
+.cases-label{
+  font-size:10px;letter-spacing:4px;text-transform:uppercase;
+  color:rgba(255,255,255,0.2);text-align:center;margin-bottom:16px;
+}
+
+/* CASE CARDS */
+.case-card{
+  margin-bottom:14px;
+  background:rgba(255,255,255,0.04);
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:20px;
+  overflow:hidden;
+}
+.case-head{padding:18px 18px 14px;}
+.case-tag{
+  font-size:9px;letter-spacing:3px;text-transform:uppercase;
+  color:rgba(200,160,74,0.5);margin-bottom:6px;
+}
+.case-name{
+  font-size:15px;font-weight:600;color:#fff;margin-bottom:6px;
+}
+.case-sit{
+  font-size:12px;color:rgba(255,255,255,0.25);
+  line-height:1.5;font-style:italic;
+}
+.case-sep{height:1px;background:rgba(255,255,255,0.06);}
+
+.user-block{padding:14px 18px;}
+.block-label{
+  font-size:9px;letter-spacing:3px;text-transform:uppercase;
+  color:rgba(255,255,255,0.2);margin-bottom:8px;
+}
+.user-choice{font-size:13px;color:rgba(255,255,255,0.55);line-height:1.4;}
+.verdict-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:9px;letter-spacing:2px;text-transform:uppercase;
+  padding:4px 12px;border-radius:20px;margin-top:10px;
+}
+.verdict-pill.wrong{
+  background:rgba(255,60,60,0.08);
+  border:1px solid rgba(255,60,60,0.2);
+  color:rgba(255,100,80,0.7);
+}
+.verdict-pill.ok{
+  background:rgba(80,200,100,0.08);
+  border:1px solid rgba(80,200,100,0.2);
+  color:rgba(100,220,120,0.7);
+}
+
+.real-block{
+  padding:14px 18px 18px;
+  background:rgba(200,160,74,0.04);
+  border-top:1px solid rgba(200,160,74,0.08);
+}
+.real-who{
+  font-size:12px;font-weight:500;
+  color:rgba(200,160,74,0.7);margin-bottom:8px;font-style:italic;
+}
+.real-action{
+  font-size:13px;color:rgba(255,255,255,0.5);
+  line-height:1.6;margin-bottom:10px;
+}
+.real-why{
+  font-size:12px;color:rgba(255,255,255,0.28);
+  line-height:1.6;padding-top:10px;
+  border-top:1px solid rgba(255,255,255,0.06);
+}
+
+.share-btn{
+  display:block;width:100%;margin-bottom:12px;padding:17px;
+  font-size:14px;font-weight:600;letter-spacing:0.5px;
+  background:linear-gradient(135deg,rgba(200,160,74,0.9),rgba(245,216,117,0.95),rgba(200,160,74,0.9));
+  color:#1a1200;border:none;border-radius:16px;cursor:pointer;
+  box-shadow:0 8px 32px rgba(200,160,74,0.2);
+}
+.retry-btn{
+  display:block;width:100%;padding:15px;
+  font-size:13px;font-weight:400;letter-spacing:0.5px;
+  background:rgba(255,255,255,0.04);
+  color:rgba(255,255,255,0.25);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:16px;cursor:pointer;
+  backdrop-filter:blur(12px);
+}
+
+/* SUBSCRIBE SCREEN */
+.sub-wrap{padding:2.5rem 0 1rem;text-align:center;}
+.sub-icon{
+  font-size:56px;margin-bottom:20px;display:block;
+  filter:drop-shadow(0 0 24px rgba(200,160,74,0.35));
+}
+.sub-title{
+  font-size:26px;font-weight:700;color:#fff;
+  letter-spacing:-0.5px;line-height:1.2;margin-bottom:10px;
+}
+.sub-desc{
+  font-size:14px;color:rgba(255,255,255,0.35);
+  line-height:1.65;font-weight:300;margin-bottom:32px;
+}
+.sub-btn{
+  display:block;width:100%;padding:17px;
+  font-size:15px;font-weight:600;
+  background:linear-gradient(135deg,rgba(200,160,74,0.9),rgba(245,216,117,0.95),rgba(200,160,74,0.9));
+  color:#1a1200;border:none;border-radius:16px;cursor:pointer;
+  box-shadow:0 8px 32px rgba(200,160,74,0.2);
+  margin-bottom:12px;
+  text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.sub-skip{
+  display:block;width:100%;padding:14px;
+  font-size:13px;background:transparent;
+  color:rgba(255,255,255,0.2);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:16px;cursor:pointer;
+}
+.sub-card{
+  padding:20px;margin-bottom:28px;
+  background:rgba(255,255,255,0.04);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:20px;
+  text-align:left;
+}
+.sub-card-row{display:flex;align-items:center;gap:14px;margin-bottom:12px;}
+.sub-avatar{
+  width:48px;height:48px;border-radius:50%;
+  background:linear-gradient(135deg,rgba(200,160,74,0.3),rgba(120,80,255,0.3));
+  border:1px solid rgba(200,160,74,0.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;flex-shrink:0;
+}
+.sub-channel-name{font-size:15px;font-weight:600;color:#fff;}
+.sub-channel-handle{font-size:12px;color:rgba(255,255,255,0.3);margin-top:2px;}
+.sub-channel-desc{font-size:13px;color:rgba(255,255,255,0.35);line-height:1.5;}
+
+.stat-compare{
+  padding:18px 20px;margin-bottom:16px;
+  background:rgba(255,255,255,0.04);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:20px;
+  display:flex;align-items:center;gap:16px;
+}
+.stat-compare-icon{font-size:28px;flex-shrink:0;}
+.stat-compare-text{flex:1;}
+.stat-compare-pct{
+  font-size:22px;font-weight:700;
+  background:linear-gradient(135deg,#c8a04a,#f5d875);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  line-height:1.2;margin-bottom:3px;
+}
+.stat-compare-desc{font-size:12px;color:rgba(255,255,255,0.3);line-height:1.4;}
+
+.share-block{
+  padding:20px;margin-bottom:12px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:20px;
+}
+.share-label{
+  font-size:15px;font-weight:600;color:#fff;margin-bottom:4px;
+}
+.share-sub{
+  font-size:12px;color:rgba(255,255,255,0.3);
+  line-height:1.5;margin-bottom:16px;
+}
+
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="wrap">
+
+<div id="s-home" class="screen active">
+  <div style="padding:3rem 0 1rem;">
+    <h1 class="home-title" style="font-size:32px;letter-spacing:-0.5px;">Твои шансы стать<br><span class="gold">миллиардером</span></h1>
+    <p class="home-sub">Встань на место 8 реальных предпринимателей и найди лучшее решение в их ситуации</p>
+    <button class="start-btn" onclick="startQuiz()" style="font-family:'Inter',sans-serif;font-size:15px;font-weight:500;letter-spacing:0.3px;">Проверить себя</button>
+  </div>
+</div>
+
+<div id="s-quiz" class="screen">
+  <div class="q-header">
+    <span class="q-counter" id="qlabel">01 / 08</span>
+    <span class="q-exit" onclick="restart()">&#215;</span>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+  <div class="q-pill" id="qtag">Кейс I</div>
+  <div class="q-hero-name" id="qhero"></div>
+  <div class="q-context" id="qcontext"></div>
+  <div class="q-text" id="qtext"></div>
+  <div class="options" id="opts"></div>
+</div>
+
+<div id="s-sub" class="screen">
+  <div class="sub-wrap">
+    <span class="sub-icon">&#127942;</span>
+    <div class="sub-title">Твой результат готов</div>
+    <div class="sub-desc">Каждый день в канале — разборы реальных кризисов которые прошли предприниматели. Какие решения их погубили, а какие привели к победе</div>
+    <div class="sub-card">
+      <div class="sub-card-row">
+        <div class="sub-avatar">&#9819;</div>
+        <div>
+          <div class="sub-channel-name">Ян Правило</div>
+          <div class="sub-channel-handle">@yan_prav</div>
+        </div>
+      </div>
+      <div class="sub-channel-desc">Изнанка бизнеса — кризисы, решения, исходы. Каждый день новый кейс</div>
+    </div>
+    <a class="sub-btn" href="https://t.me/yan_prav" target="_blank" onclick="onSubscribe()">
+      Подписаться и смотреть результат
+    </a>
+    <button class="sub-skip" onclick="showResult()">Уже подписан</button>
+  </div>
+</div>
+
+<div id="s-result" class="screen">
+  <div class="res-top">
+    <span class="res-eyebrow">Твой результат</span>
+    <span class="res-icon" id="res-emoji"></span>
+    <div class="res-title" id="res-title"></div>
+    <div class="res-sub" id="res-sub"></div>
+  </div>
+  <div class="score-glass">
+    <div class="score-num" id="res-pct">-</div>
+    <div class="score-label">совпадений с миллиардерами</div>
+    <div class="meter-track"><div class="meter-fill" id="meter" style="width:0%"></div></div>
+  </div>
+  <div class="stat-compare" id="stat-compare"></div>
+  <div class="traits" id="res-traits"></div>
+  <div class="res-desc-block">
+    <div class="res-verdict" id="res-verdict"></div>
+    <div class="res-desc-text" id="res-desc-text"></div>
+  </div>
+  <div class="cases-label">Разбор твоих ответов</div>
+  <div id="cases-list"></div>
+  <button class="retry-btn" onclick="restart()">Пройти заново</button>
+</div>
+
+</div>
+<script>
+var answers=[];
+var cur=0;
+var romans=['I','II','III','IV','V','VI','VII','VIII'];
+var questions=[
+  {
+    tag:"Кейс I",hero:"Говард Шульц, Starbucks",
+    situation:"Starbucks — сеть кофеен в США. 1987 год. Шульц только что выкупил компанию за $3,8 млн — влез в долги. Через 6 месяцев кофейня теряет $400K в квартал. Инвесторы требуют сократить меню и поднять цены до уровня прибыли. Банк намекает на досрочное погашение кредита.",
+    q:"Ты теряешь $400K в квартал. Банк давит. Что делаешь?",
+    opts:[
+      {t:"Режу меню, поднимаю цены — выхожу в плюс за квартал",s:2},
+      {t:"Иду за новым раундом инвестиций, не меняя ничего",s:5},
+      {t:"Ускоряю открытие новых точек — масштаб покроет убытки",s:10},
+      {t:"Продаю часть бизнеса инвесторам чтобы закрыть дыру",s:3}
+    ],
+    rightIdx:2,
+    rightWho:"Говард Шульц",
+    rightAction:"Открыл ещё 6 точек за год, пока все кричали что он сумасшедший. Логика: постоянные издержки не растут пропорционально выручке. Каждая новая точка приближала к точке безубыточности быстрее, чем резка расходов. Через 2 года Starbucks вышел в прибыль.",
+    wrongWhy:"Поднять цены и срезать меню — это рефлекс выживания, не стратегия роста. В бизнесе с высокими постоянными издержками единственный выход — масштаб. Шульц понял это раньше, чем его инвесторы."
+  },
+  {
+    tag:"Кейс II",hero:"Ли Ка-Шин, CK Hutchison",
+    situation:"CK Hutchison — конгломерат: порты, телеком, недвижимость, ритейл в 50 странах. 1967 год. Гонконг охвачен левыми беспорядками — бомбы на улицах, паника. Все состоятельные люди выводят деньги и активы с острова. Недвижимость падает на 40% за 3 месяца. У Ли — $2 млн наличными от завода.",
+    q:"Беспорядки, недвижимость -40%. У тебя $2 млн. Что делаешь?",
+    opts:[
+      {t:"Переводю деньги в Сингапур — переждать",s:1},
+      {t:"Скупаю недвижимость в Гонконге на всё",s:10},
+      {t:"Покупаю частично — $500K в Гонконг, остальное в безопасность",s:4},
+      {t:"Жду 6 месяцев — посмотрю как ситуация развернётся",s:2}
+    ],
+    rightIdx:1,
+    rightWho:"Ли Ка-Шин",
+    rightAction:"Скупил максимум гонконгской недвижимости пока все бежали. Через 3 года беспорядки стихли, цены восстановились и выросли в 4 раза. Этот манёвр стал фундаментом его $38-миллиардного состояния.",
+    wrongWhy:"Страх — лучший дисконт. Когда все бегут с рынка, активы продаются ниже реальной стоимости. Ли не угадывал политику — он просто знал что Гонконг как торговый хаб никуда не денется. Остальное было математикой."
+  },
+  {
+    tag:"Кейс III",hero:"Ингвар Кампрад, IKEA",
+    situation:"IKEA — шведская компания по продаже мебели и товаров для дома. 1955 год. Кампраду 29 лет. Конкуренты-мебельщики объединились и продавили запрет на участие IKEA в шведских мебельных выставках. Без выставок — нет покупателей, нет бизнеса. Оборот IKEA $600K, но без дистрибуции он рухнет.",
+    q:"Тебя выбили с рынка через картель. Оборот под угрозой. Твой ход?",
+    opts:[
+      {t:"Подаю в суд на конкурентов за антиконкурентный сговор",s:2},
+      {t:"Открываю собственный шоурум — заменяю выставки",s:7},
+      {t:"Перехожу на каталожную торговлю по почте + свой склад-магазин",s:10},
+      {t:"Выхожу на рынки других стран где нет этого картеля",s:5}
+    ],
+    rightIdx:2,
+    rightWho:"Ингвар Кампрад",
+    rightAction:"Запустил продажи по каталогу и открыл первый склад-магазин где покупатель сам забирает мебель в плоской упаковке. Картель фактически создал формат IKEA — без него не было бы ни каталогов, ни flat-pack, ни самой концепции.",
+    wrongWhy:"Суд — годы и деньги. Чужие рынки — новые расходы. Кампрад использовал атаку конкурентов как рычаг для изобретения нового формата. Ограничение стало преимуществом."
+  },
+  {
+    tag:"Кейс IV",hero:"Чжан Имин, ByteDance / TikTok",
+    situation:"ByteDance — китайская технологическая компания, создавшая TikTok — самое скачиваемое приложение в мире для коротких видео. 2017 год. TikTok существует только в Китае под названием Douyin. Чжану предлагают купить Musical.ly — американский стартап с 60 млн пользователей — за $800 млн. Это почти весь свободный капитал компании. Советники говорят: переплата, Musical.ly теряет пользователей.",
+    q:"$800 млн за убывающий стартап — это почти весь капитал. Покупаешь?",
+    opts:[
+      {t:"Нет — переплата, лучше органический рост в США",s:2},
+      {t:"Да — покупаю, сразу сливаю с TikTok",s:10},
+      {t:"Торгуюсь до $400 млн или отказываюсь",s:4},
+      {t:"Да — покупаю, но оставляю как отдельный продукт",s:3}
+    ],
+    rightIdx:1,
+    rightWho:"Чжан Имин",
+    rightAction:"Заплатил $800 млн, немедленно влил аудиторию Musical.ly в TikTok. Получил 60 млн американских пользователей и готовую инфраструктуру за считанные месяцы вместо 3-4 лет органического роста. TikTok сейчас стоит $200+ млрд.",
+    wrongWhy:"Musical.ly теряла пользователей сама по себе — но как входной билет на американский рынок с готовой базой она стоила каждого цента. Чжан покупал не продукт, а время и плацдарм."
+  },
+  {
+    tag:"Кейс V",hero:"Сэм Уолтон, Walmart",
+    situation:"Walmart — крупнейшая в мире сеть розничных супермаркетов с товарами по минимальным ценам. 1962 год. Уолтон хочет открыть дисконтные магазины — низкие цены, большой объём. Он идёт к крупнейшим дистрибьюторам США за оптовыми условиями. Все отказывают: его сеть слишком мала, невыгодно. Без оптовых цен модель не работает.",
+    q:"Дистрибьюторы отказали — без них твоя модель мертва. Что дальше?",
+    opts:[
+      {t:"Открываю магазины с обычными ценами — дождусь масштаба",s:3},
+      {t:"Выстраиваю прямые контракты с производителями, минуя дистрибьюторов",s:10},
+      {t:"Ищу мелких региональных дистрибьюторов с более мягкими условиями",s:5},
+      {t:"Меняю модель — ухожу в премиум где нет ценовой войны",s:1}
+    ],
+    rightIdx:1,
+    rightWho:"Сэм Уолтон",
+    rightAction:"Поехал напрямую к производителям. Предложил гарантированные объёмы в обмен на минимальную цену без посредников. Производители согласились. Walmart убрал целый слой цепочки поставок — это и стало его главным конкурентным преимуществом на 60 лет вперёд.",
+    wrongWhy:"Когда система закрывает дверь — ищи способ обойти систему целиком. Уолтон не стал играть по правилам дистрибьюторов. Он переписал правила."
+  },
+  {
+    tag:"Кейс VI",hero:"Ричард Брэнсон, Virgin Atlantic",
+    situation:"Virgin Atlantic — британская авиакомпания, основанная как прямой вызов монополии British Airways на трансатлантических маршрутах. 1984 год. Брэнсон хочет запустить авиалинию. Юристы и финансисты говорят: British Airways уничтожит новичка ценовыми войнами — у BA резервы $2 млрд, у Брэнсона $15 млн. Брэнсон нашёл самолёт Boeing 747 в аренду, но контракт на год без права выхода.",
+    q:"BA с $2 млрд против тебя с $15 млн. Подписываешь контракт на самолёт?",
+    opts:[
+      {t:"Нет — самоубийство, BA сотрёт меня ценами",s:1},
+      {t:"Да — подписываю стандартный контракт",s:3},
+      {t:"Переговариваю условие: если убыток за год — Boeing выкупает самолёт обратно",s:10},
+      {t:"Ищу партнёра с капиталом чтобы войти на двоих",s:5}
+    ],
+    rightIdx:2,
+    rightWho:"Ричард Брэнсон",
+    rightAction:"Добился от Boeing условия обратного выкупа. Ограничил максимальный убыток стоимостью года аренды. Зашёл в рынок с защитой снизу. Virgin Atlantic до сих пор летает — и пережила BA в нескольких кризисах.",
+    wrongWhy:"Настоящий предприниматель не избегает риска — он его проектирует. Брэнсон не спрашивал «рисковать или нет». Он спрашивал: «какой максимальный убыток я могу себе позволить и как его зафиксировать»."
+  },
+  {
+    tag:"Кейс VII",hero:"Масаёси Сон, SoftBank",
+    situation:"SoftBank — японский телеком и венчурный холдинг, один из крупнейших технологических инвесторов в мире: Alibaba, Uber, WeWork, ARM. 2000 год. Пузырь доткомов лопнул. Акции SoftBank упали на 98% — с $180 млрд до $2 млрд капитализации. Личное состояние Сона сократилось на $70 млрд за 12 месяцев. Совет директоров требует распродать активы и уйти в кэш.",
+    q:"Ты потерял $70 млрд за год. Совет требует выйти в кэш. Что делаешь?",
+    opts:[
+      {t:"Слушаю совет — фиксирую убытки, выхожу в кэш",s:1},
+      {t:"Удерживаю все позиции, не продаю ничего",s:7},
+      {t:"Продаю убыточные активы, удваиваю позиции в лучших",s:10},
+      {t:"Ухожу с поста CEO — пусть антикризисный менеджер разбирается",s:0}
+    ],
+    rightIdx:2,
+    rightWho:"Масаёси Сон",
+    rightAction:"Продал слабые активы, сохранил и увеличил долю в Alibaba и Yahoo Japan. Именно в 2000-м докупил акции Alibaba за $20 млн — когда все смеялись над Ма. Эта позиция впоследствии стоила $150 млрд.",
+    wrongWhy:"Кризис — не конец игры, это перераспределение активов от испуганных к хладнокровным. Сон не пытался спасти всё — он выбрал лучшее и поставил на него в момент максимального страха рынка."
+  },
+  {
+    tag:"Кейс VIII",hero:"Джефф Безос, Amazon",
+    situation:"Amazon — американская компания, начавшая как интернет-магазин книг и выросшая в крупнейший в мире маркетплейс и облачную платформу. 2000 год. Amazon теряет $1,4 млрд в год. Инвесторы в панике. Аналитики пишут: «Amazon.bomb». Безосу предлагают срочно монетизировать трафик — запустить рекламу на сайте. Это даст $300-400 млн дохода в год почти сразу.",
+    q:"Теряешь $1,4 млрд/год. Реклама даст $400 млн сразу. Запускаешь?",
+    opts:[
+      {t:"Да — $400 млн это выживание, запускаю рекламу",s:2},
+      {t:"Нет — реклама убьёт пользовательский опыт, режу косты",s:7},
+      {t:"Нет — вместо рекламы открываю платформу для сторонних продавцов",s:10},
+      {t:"Да — запускаю рекламу, но только нативную нераздражающую",s:3}
+    ],
+    rightIdx:2,
+    rightWho:"Джефф Безос",
+    rightAction:"Отказался от рекламы. Запустил Amazon Marketplace — сторонних продавцов на своей платформе. Комиссия с продаж оказалась масштабируемее рекламы в 10 раз. Сегодня Marketplace даёт Amazon больше прибыли чем весь retail.",
+    wrongWhy:"Быстрые деньги от рекламы решили бы квартал. Платформа для продавцов решила следующие 20 лет. Безос выбирал не между прибылью и убытком — он выбирал между краткосрочным выживанием и долгосрочным господством."
+  }
+];
+
+var results=[
+  {min:7,emoji:"&#9819;",title:"Ты мыслишь как они",sub:"Редкое совпадение",verdict:"7–8 из 8 — это не случайность.",desc:"Твои инстинкты совпадают с людьми которые изменили рынки. Это не значит что ты уже богат — но у тебя правильная операционная система в голове.",traits:["Стратег","Антихрупкость","Масштаб","Риск"]},
+  {min:5,emoji:"&#128293;",title:"Близко к верхнему уровню",sub:"5–6 совпадений из 8",verdict:"Мышление есть. Иногда включается страх.",desc:"Ты часто видишь правильный ответ, но в моменте выбираешь безопасность. Один-два сдвига — и ты в другой категории.",traits:["Потенциал","Осторожность","Рост"]},
+  {min:3,emoji:"&#9889;",title:"Половина на половину",sub:"3–4 совпадения из 8",verdict:"Ты думаешь как наёмник и предприниматель одновременно.",desc:"Половина решений совпадает с миллиардерами, половина — с большинством. Хорошая новость: ты уже видишь разницу. Плохая: ты ещё не выбрал сторону.",traits:["Переходная зона","Осторожность"]},
+  {min:1,emoji:"&#127761;",title:"Система тебя держит",sub:"1–2 совпадения из 8",verdict:"Твои инстинкты работают против тебя.",desc:"Стабильность, избегание риска, доверие советникам. Нормально для наёмника. Для миллиардера — смертельно.",traits:["Стабильность","Комфорт","Безопасность"]},
+  {min:0,emoji:"&#128164;",title:"Честный ноль",sub:"Ни одного совпадения",verdict:"Ты выбирал как большинство.",desc:"Ни один из восьми не сделал то что выбрал ты. Они жили в другой логике. Вопрос: хочешь ли ты понять эту логику?",traits:["Комфорт","Стабильность"]}
+];
+
+function startQuiz(){answers=[];cur=0;show('s-quiz');renderQ();}
+function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');}
+
+function renderQ(){
+  var q=questions[cur];
+  document.getElementById('qlabel').textContent=(cur+1<10?'0':'')+(cur+1)+' / 0'+questions.length;
+  document.getElementById('qtag').textContent=q.tag;
+  document.getElementById('qhero').textContent=q.hero;
+  document.getElementById('qcontext').textContent=q.situation;
+  document.getElementById('qtext').textContent=q.q;
+  document.getElementById('prog').style.width=((cur/questions.length)*100)+'%';
+  var opts=document.getElementById('opts');
+  opts.innerHTML='';
+  var letters=['A','B','C','D'];
+  for(var i=0;i<q.opts.length;i++){
+    (function(idx){
+      var b=document.createElement('button');
+      b.className='opt';
+      b.innerHTML='<span class="opt-letter">'+letters[idx]+'</span>'+q.opts[idx].t;
+      var s=q.opts[idx].s;
+      b.onclick=function(){pick(b,s,idx);};
+      opts.appendChild(b);
+    })(i);
+  }
+}
+
+function pick(btn,s,chosen){
+  document.querySelectorAll('.opt').forEach(function(b){b.classList.remove('selected');});
+  btn.classList.add('selected');
+  answers.push({qIdx:cur,chosen:chosen,score:s});
+  setTimeout(function(){cur++;if(cur<questions.length){renderQ();}else{show('s-sub');}},380);
+}
+
+function onSubscribe(){
+  setTimeout(function(){showResult();},1200);
+}
+
+function showResult(){
+  var total=answers.reduce(function(acc,a){return acc+(a.score>=8?1:0);},0);
+  var r=null;
+  for(var i=0;i<results.length;i++){if(total>=results[i].min){r=results[i];break;}}
+  if(!r)r=results[results.length-1];
+  show('s-result');
+  document.getElementById('res-emoji').innerHTML=r.emoji;
+  document.getElementById('res-title').textContent=r.title;
+  document.getElementById('res-sub').textContent=r.sub;
+  document.getElementById('res-pct').textContent=total+' / '+questions.length;
+  document.getElementById('res-verdict').textContent=r.verdict;
+  document.getElementById('res-desc-text').textContent=r.desc;
+  var th=document.getElementById('res-traits');
+  th.innerHTML=r.traits.map(function(t){return'<span class="trait">'+t+'</span>';}).join('');
+
+  var pct=Math.round((total/questions.length)*100);
+  var betterThan, statText;
+  if(pct>=87){betterThan=94;statText='лучше чем у 94% прошедших тест';}
+  else if(pct>=62){betterThan=71;statText='лучше чем у 71% прошедших тест';}
+  else if(pct>=37){betterThan=43;statText='лучше чем у 43% прошедших тест';}
+  else if(pct>=12){betterThan=18;statText='лучше чем у 18% прошедших тест';}
+  else{betterThan=7;statText='большинство справилось лучше';}
+  document.getElementById('stat-compare').innerHTML=
+    '<div class="stat-compare-icon">&#128202;</div>'+
+    '<div class="stat-compare-text">'+
+      '<div class="stat-compare-pct">Твой результат '+statText+'</div>'+
+      '<div class="stat-compare-desc">Тест прошли более 3 400 человек. Угадать все 8 кейсов не смог никто.</div>'+
+    '</div>';
+
+  var cl=document.getElementById('cases-list');
+  cl.innerHTML='';
+  answers.forEach(function(a){
+    var q=questions[a.qIdx];
+    var isRight=(a.chosen===q.rightIdx);
+    var card=document.createElement('div');
+    card.className='case-card';
+    card.innerHTML=
+      '<div class="case-head">'+
+        '<div class="case-tag">'+q.tag+'</div>'+
+        '<div class="case-name">'+q.hero+'</div>'+
+        '<div class="case-sit">'+q.situation+'</div>'+
+      '</div>'+
+      '<div class="case-sep"></div>'+
+      '<div class="user-block">'+
+        '<div class="block-label">Твой ответ</div>'+
+        '<div class="user-choice">'+q.opts[a.chosen].t+'</div>'+
+        '<span class="verdict-pill '+(isRight?'ok':'wrong')+'">'+(isRight?'&#10003; Совпадает':'&#215; Расходится')+'</span>'+
+      '</div>'+
+      '<div class="real-block">'+
+        '<div class="block-label">Что сделал миллиардер</div>'+
+        '<div class="real-who">'+q.rightWho+' — '+q.opts[q.rightIdx].t+'</div>'+
+        '<div class="real-action">'+q.rightAction+'</div>'+
+        '<div class="real-why">'+q.wrongWhy+'</div>'+
+      '</div>';
+    cl.appendChild(card);
+  });
+  setTimeout(function(){document.getElementById('meter').style.width=((total/questions.length)*100)+'%';},200);
+}
+
+function share(){
+  var total=document.getElementById('res-pct').textContent;
+  var title=document.getElementById('res-title').textContent;
+  var text='Прошёл тест на мышление миллиардера — угадал '+total+' кейсов из 8\n\n«'+title+'»\n\nСмотришь на кризис Starbucks, Amazon, TikTok и думаешь что сделал бы ты. Потом узнаёшь что сделали они — и почему твоё решение проигрывает.\n\nПопробуй побить мой результат 👇';
+  if(navigator.share){navigator.share({text:text});}
+  else if(window.Telegram&&window.Telegram.WebApp){window.Telegram.WebApp.switchInlineQuery(text);}
+  else{if(navigator.clipboard)navigator.clipboard.writeText(text);alert('Скопировано! Отправь друзьям');}
+}
+
+function restart(){cur=0;answers=[];show('s-home');}
+if(window.Telegram&&window.Telegram.WebApp){window.Telegram.WebApp.ready();window.Telegram.WebApp.expand();}
+</script>
+</body>
+</html>
