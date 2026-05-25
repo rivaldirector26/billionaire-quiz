@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Стану ли я миллиардером?</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f0f0f;
+    color: #f0f0f0;
+    min-height: 100vh;
+    padding: 20px 16px 40px;
+  }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .hero { text-align: center; padding: 3rem 0 2rem; }
+  .hero-icon { font-size: 64px; margin-bottom: 16px; }
+  .hero h1 { font-size: 24px; font-weight: 600; margin-bottom: 10px; color: #fff; }
+  .hero p { font-size: 15px; color: #888; line-height: 1.6; }
+
+  .start-btn {
+    display: block; width: 100%; margin-top: 2.5rem;
+    padding: 16px; font-size: 17px; font-weight: 600;
+    background: #FFD700; color: #000;
+    border: none; border-radius: 14px; cursor: pointer;
+    transition: transform 0.1s, opacity 0.1s;
+  }
+  .start-btn:active { transform: scale(0.97); opacity: 0.85; }
+
+  .progress-bar { height: 4px; background: #222; border-radius: 2px; margin-bottom: 1.5rem; overflow: hidden; }
+  .progress-fill { height: 100%; background: #FFD700; border-radius: 2px; transition: width 0.3s ease; }
+  .q-label { font-size: 13px; color: #555; margin-bottom: 8px; }
+  .q-text { font-size: 19px; font-weight: 600; color: #fff; line-height: 1.4; margin-bottom: 1.5rem; }
+
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .opt {
+    padding: 15px 16px;
+    border: 1px solid #2a2a2a;
+    border-radius: 14px;
+    background: #1a1a1a;
+    font-size: 15px; color: #ddd;
+    cursor: pointer; text-align: left;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .opt:active { background: #252525; }
+  .opt.selected { border-color: #FFD700; background: #1f1d00; color: #FFD700; }
+
+  .result-wrap { text-align: center; padding: 1.5rem 0; }
+  .result-emoji { font-size: 72px; margin-bottom: 16px; display: block; }
+  .result-title { font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .result-sub { font-size: 14px; color: #666; margin-bottom: 2rem; }
+
+  .chance-block { margin: 1.5rem 0; }
+  .chance-num { font-size: 64px; font-weight: 700; color: #FFD700; line-height: 1; }
+  .chance-label { font-size: 13px; color: #555; margin-top: 4px; }
+  .meter { height: 8px; background: #222; border-radius: 4px; margin: 1.2rem 0; overflow: hidden; }
+  .meter-fill { height: 100%; border-radius: 4px; background: #FFD700; transition: width 1.2s cubic-bezier(.17,.67,.42,1); }
+
+  .traits { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 1.2rem 0; }
+  .trait {
+    padding: 5px 14px; font-size: 13px;
+    border: 1px solid #2a2a2a; border-radius: 20px; color: #888;
+  }
+
+  .result-desc {
+    font-size: 15px; color: #ccc; line-height: 1.65;
+    text-align: left; padding: 1rem 1.25rem;
+    background: #1a1a1a; border-radius: 14px; margin-bottom: 1.5rem;
+  }
+
+  .share-btn {
+    display: block; width: 100%; margin-bottom: 10px;
+    padding: 15px; font-size: 16px; font-weight: 600;
+    background: #FFD700; color: #000;
+    border: none; border-radius: 14px; cursor: pointer;
+  }
+  .retry-btn {
+    display: block; width: 100%; padding: 14px;
+    font-size: 15px; background: transparent; color: #555;
+    border: 1px solid #2a2a2a; border-radius: 14px; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="s-home" class="screen active">
+  <div class="hero">
+    <div class="hero-icon">💰</div>
+    <h1>Стану ли я миллиардером?</h1>
+    <p>10 честных вопросов — и мы посчитаем твой шанс войти в Forbes</p>
+  </div>
+  <button class="start-btn" onclick="startQuiz()">Начать тест →</button>
+</div>
+
+<div id="s-quiz" class="screen">
+  <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+  <div class="q-label" id="qlabel">Вопрос 1 / 10</div>
+  <div class="q-text" id="qtext"></div>
+  <div class="options" id="opts"></div>
+</div>
+
+<div id="s-result" class="screen">
+  <div class="result-wrap">
+    <span class="result-emoji" id="res-emoji"></span>
+    <div class="result-title" id="res-title"></div>
+    <div class="result-sub" id="res-sub"></div>
+    <div class="chance-block">
+      <div class="chance-num" id="res-pct">0%</div>
+      <div class="chance-label">шанс стать миллиардером</div>
+      <div class="meter"><div class="meter-fill" id="meter" style="width:0%"></div></div>
+    </div>
+    <div class="traits" id="res-traits"></div>
+    <div class="result-desc" id="res-desc"></div>
+    <button class="share-btn" onclick="share()">Поделиться результатом</button>
+    <button class="retry-btn" onclick="restart()">Пройти ещё раз</button>
+  </div>
+</div>
+
+<script>
+const questions = [
+  { q: "Как ты реагируешь на риск?", opts: [
+    { t: "Вложу всё — или ничего", s: 10 },
+    { t: "Просчитаю и рискну", s: 7 },
+    { t: "Рискну немного", s: 4 },
+    { t: "Предпочту стабильность", s: 1 }
+  ]},
+  { q: "Что ты делаешь, когда терпишь неудачу?", opts: [
+    { t: "Анализирую и иду дальше", s: 10 },
+    { t: "Расстраиваюсь, но продолжаю", s: 7 },
+    { t: "Ищу причины у других", s: 3 },
+    { t: "Надолго теряю мотивацию", s: 1 }
+  ]},
+  { q: "Сколько часов в день ты готов работать на свою мечту?", opts: [
+    { t: "14+ часов — сон переоценён", s: 10 },
+    { t: "10–12 часов легко", s: 8 },
+    { t: "8 часов как обычно", s: 4 },
+    { t: "Не больше 6", s: 1 }
+  ]},
+  { q: "Есть ли у тебя конкретная идея бизнеса?", opts: [
+    { t: "Да, уже работаю над ней", s: 10 },
+    { t: "Да, ещё не запустил", s: 7 },
+    { t: "Есть несколько идей в голове", s: 4 },
+    { t: "Пока нет", s: 1 }
+  ]},
+  { q: "Как ты относишься к деньгам?", opts: [
+    { t: "Инструмент для роста", s: 10 },
+    { t: "Средство для свободы", s: 7 },
+    { t: "Хочется больше, но не знаю как", s: 3 },
+    { t: "Главное — не деньги", s: 1 }
+  ]},
+  { q: "Есть ли у тебя наставник или сильное окружение?", opts: [
+    { t: "Да, окружён успешными людьми", s: 10 },
+    { t: "Есть пара таких людей", s: 6 },
+    { t: "Ищу такое окружение", s: 3 },
+    { t: "Нет, справлюсь сам", s: 1 }
+  ]},
+  { q: "Как ты учишься?", opts: [
+    { t: "Постоянно: книги, курсы, практика", s: 10 },
+    { t: "Учусь, когда нужно", s: 6 },
+    { t: "В основном из YouTube", s: 3 },
+    { t: "Предпочитаю не учиться", s: 1 }
+  ]},
+  { q: "Умеешь ли ты продавать?", opts: [
+    { t: "Продам что угодно кому угодно", s: 10 },
+    { t: "Неплохо, но есть куда расти", s: 7 },
+    { t: "Стараюсь, но стесняюсь", s: 3 },
+    { t: "Ненавижу продавать", s: 1 }
+  ]},
+  { q: "Как ты думаешь о масштабе?", opts: [
+    { t: "Хочу бизнес на весь мир", s: 10 },
+    { t: "Страна или несколько стран", s: 7 },
+    { t: "Хороший локальный бизнес", s: 4 },
+    { t: "Мне хватит небольшого дела", s: 1 }
+  ]},
+  { q: "Что для тебя важнее всего?", opts: [
+    { t: "Изменить мир и заработать", s: 10 },
+    { t: "Финансовая свобода", s: 8 },
+    { t: "Стабильность и комфорт", s: 3 },
+    { t: "Семья и здоровье", s: 1 }
+  ]}
+];
+
+const results = [
+  { min: 85, emoji: "🚀", title: "Будущий миллиардер", sub: "Forbes ждёт тебя", pct: "~12%", desc: "У тебя есть почти всё: амбиции, мышление, готовность рисковать. Ты думаешь масштабно и не боишься падений. Путь непрост, но у тебя реальные шансы. Действуй, пока горит огонь.", traits: ["Лидер", "Риск", "Масштаб", "Упорство"] },
+  { min: 65, emoji: "💎", title: "Очень сильный кандидат", sub: "Почти у вершины", pct: "~4%", desc: "Ты думаешь как предприниматель и умеешь работать. Не хватает чуть больше смелости или нужного окружения. Найди ментора, сделай первый шаг — и дистанция сократится резко.", traits: ["Амбиции", "Трудолюбие", "Рост", "Фокус"] },
+  { min: 45, emoji: "⚡", title: "Предпринимательский потенциал", sub: "Потенциал есть, нужна работа", pct: "~0.8%", desc: "В тебе есть задатки, но пока не хватает системности или готовности к риску. Это решаемо. Начни строить окружение, изучай бизнес изнутри — и ты удивишься, как быстро всё может измениться.", traits: ["Потенциал", "Любознательность"] },
+  { min: 25, emoji: "🌱", title: "Только начало пути", sub: "Главное — начать", pct: "~0.1%", desc: "Ты ещё не в режиме «миллиардер», и это нормально. Первый шаг — поменять своё отношение к риску и неудачам. Начни с малого бизнеса или прочти пару книг об успешных предпринимателях.", traits: ["Осторожность", "Стабильность"] },
+  { min: 0, emoji: "😴", title: "Не твой путь (пока)", sub: "Честно — почти нет шансов", pct: "<0.01%", desc: "Судя по ответам, тебя сейчас не особо интересует путь миллиардера — и в этом нет ничего плохого. Но если хочется изменений, начни с маленького: одна привычка, один шаг в день.", traits: ["Комфорт", "Стабильность"] }
+];
+
+let cur = 0, score = 0;
+
+function startQuiz() { cur = 0; score = 0; show('s-quiz'); renderQ(); }
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function renderQ() {
+  const q = questions[cur];
+  document.getElementById('qlabel').textContent = `Вопрос ${cur + 1} / ${questions.length}`;
+  document.getElementById('qtext').textContent = q.q;
+  document.getElementById('prog').style.width = ((cur / questions.length) * 100) + '%';
+  const opts = document.getElementById('opts');
+  opts.innerHTML = '';
+  q.opts.forEach(o => {
+    const b = document.createElement('button');
+    b.className = 'opt'; b.textContent = o.t;
+    b.onclick = () => pick(b, o.s);
+    opts.appendChild(b);
+  });
+}
+
+function pick(btn, s) {
+  document.querySelectorAll('.opt').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  score += s;
+  setTimeout(() => { cur++; cur < questions.length ? renderQ() : showResult(); }, 300);
+}
+
+function showResult() {
+  const pct = Math.round((score / (questions.length * 10)) * 100);
+  const r = results.find(x => pct >= x.min) || results[results.length - 1];
+  show('s-result');
+  document.getElementById('res-emoji').textContent = r.emoji;
+  document.getElementById('res-title').textContent = r.title;
+  document.getElementById('res-sub').textContent = r.sub;
+  document.getElementById('res-desc').textContent = r.desc;
+  document.getElementById('res-pct').textContent = r.pct;
+  document.getElementById('res-traits').innerHTML = r.traits.map(t => `<span class="trait">${t}</span>`).join('');
+  setTimeout(() => { document.getElementById('meter').style.width = pct + '%'; }, 100);
+}
+
+function share() {
+  const title = document.getElementById('res-title').textContent;
+  const pct = document.getElementById('res-pct').textContent;
+  const text = `Мой шанс стать миллиардером: ${pct} — «${title}» 💰\nПройди тест сам!`;
+  if (navigator.share) { navigator.share({ text }); }
+  else if (window.Telegram?.WebApp) { window.Telegram.WebApp.switchInlineQuery(text); }
+  else { navigator.clipboard?.writeText(text); alert('Скопировано!'); }
+}
+
+function restart() { startQuiz(); }
+
+if (window.Telegram?.WebApp) { window.Telegram.WebApp.ready(); window.Telegram.WebApp.expand(); }
+</script>
+</body>
+</html>
